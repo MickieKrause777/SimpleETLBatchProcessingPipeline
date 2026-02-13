@@ -1,6 +1,6 @@
 import logging
 import os
-from data_cleaner import DataCleaner
+from scripts.data_cleaner import DataCleaner
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
 import pandas as pd
