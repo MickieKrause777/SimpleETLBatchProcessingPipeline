@@ -25,6 +25,13 @@ default_args = {
 )
 def sensor_batch_processing():
     @task.python
+    def setup_database(**context):
+        loader = BatchLoader(batch_size=BATCH_SIZE)
+        loader.setup_collection()
+        loader.close()
+        return "Database setup complete"
+
+    @task.python
     def get_chunk_boundaries(**context):
         if not os.path.exists(CSV_FILE_PATH):
             raise FileNotFoundError(f"CSV file not found: {CSV_FILE_PATH}")
@@ -52,13 +59,6 @@ def sensor_batch_processing():
 
         print(f"Total rows: {total_rows}")
         print(f"Chunks: {chunks}")
-
-    @task.python
-    def create_indexes(**context):
-        loader = BatchLoader(batch_size=BATCH_SIZE)
-        loader.create_indexes()
-        loader.close()
-        return "Indexes created successfully"
 
     @task.python
     def process_chunk(chunk_id: int, **context):
@@ -104,12 +104,12 @@ def sensor_batch_processing():
         total_stats = {
             'total_rows_read': 0,
             'total_rows_inserted': 0,
+            "total_rows_skipped": 0,
             'chunks_processed': 0,
             'cleansing_stats': {
                 'duplicates_removed': 0,
                 'missing_values_dropped': 0,
                 'type_errors_fixed': 0,
-                'anomalies_flagged': 0,
             }
         }
 
@@ -136,7 +136,7 @@ def sensor_batch_processing():
         return total_stats
 
     calculate_chunks = get_chunk_boundaries()
-    create_idx = create_indexes()
+    create_idx = setup_database()
     process_group = process_chunks_group()
     aggregate = aggregate_results()
 

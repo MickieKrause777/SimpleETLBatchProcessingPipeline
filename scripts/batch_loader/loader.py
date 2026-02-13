@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 from scripts.data_cleaner import DataCleaner
@@ -32,11 +33,22 @@ class BatchLoader:
         self.collection = self.db[self.collection_name]
         logger.info(f"Connected to MongoDB: {self.mongo_uri}, DB: {self.database}")
 
-    def create_indexes(self):
-        self.collection.create_index('device')
-        self.collection.create_index('ts')
-        self.collection.create_index([('device', 1), ('ts', -1)])
-        logger.info("Created indexes on 'device', 'ts', and compound index")
+    def setup_collection(self):
+        existing_collections = self.db.list_collection_names()
+
+        if self.collection_name not in existing_collections:
+            self.db.create_collection(self.collection_name, timeseries={
+                "timeField": "ts",
+                "metaField": "device",
+                "granularity":"seconds"
+            })
+            logger.info(f"Created collection: {self.collection_name}")
+        else:
+            logger.info(f"Collection {self.collection_name} already exists, skipped creation")
+
+        self.collection = self.db[self.collection_name]
+
+        logger.info("Ensured indexes on time series collection")
 
     def load_csv_chunk(
             self,
@@ -83,73 +95,11 @@ class BatchLoader:
         logger.info(f"Batch complete: {stats}")
         return stats
 
-    def load_full_csv(self, filepath: str, batch_id: str = None) -> dict:
-        batch_id = batch_id or f"full_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
-        logger.info(f"Loading full CSV: {filepath}")
-
-        # Read entire file
-        df = pd.read_csv(filepath)
-        total_rows = len(df)
-
-        logger.info(f"Read {total_rows} rows from CSV")
-
-        df = self.cleaner.cleanse(df)
-
-        df['_metadata'] = df.apply(lambda _: {
-            'ingested_at': datetime.now(),
-            'batch_id': batch_id
-        }, axis=1)
-
-        records = df.to_dict('records')
-        inserted_count = 0
-
-        for i in range(0, len(records), self.batch_size):
-            batch = records[i:i + self.batch_size]
-            try:
-                result = self.collection.insert_many(batch, ordered=False)
-                inserted_count += len(result.inserted_ids)
-                logger.info(f"Inserted batch {i // self.batch_size + 1}: {len(batch)} documents")
-            except BulkWriteError as e:
-                inserted_count += e.details.get('nInserted', 0)
-                logger.warning(f"Bulk write warning: {e.details.get('writeErrors', [])[:3]}")
-
-        stats = {
-            'total_rows_read': total_rows,
-            'rows_after_cleansing': len(df),
-            'rows_inserted': inserted_count,
-            'cleansing_stats': self.cleaner.stats.copy(),
-            'batch_id': batch_id
-        }
-
-        logger.info(f"Full load complete: {stats}")
-        return stats
-
     def close(self):
         """Close MongoDB connection."""
         self.client.close()
         logger.info("MongoDB connection closed")
 
-
 def get_csv_row_count(filepath: str) -> int:
     with open(filepath, 'r') as f:
         return sum(1 for _ in f) - 1  # Subtract header
-
-
-if __name__ == '__main__':
-    # Example usage for testing
-    import sys
-
-    print(sys.argv)
-    if len(sys.argv) < 2:
-        print("Usage: python batch_loader.py <csv_filepath>")
-        sys.exit(1)
-
-    filepath = sys.argv[1]
-
-    loader = BatchLoader()
-    loader.create_indexes()
-    stats = loader.load_full_csv(filepath)
-    loader.close()
-
-    print(f"\nFinal Statistics: {stats}")
