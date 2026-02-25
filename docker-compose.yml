@@ -19,6 +19,7 @@ x-airflow-common:
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     MONGO_URI: mongodb://mongodb:27017/
     MONGO_DB: sensor_data
+    PUSHGATEWAY_URL: pushgateway:9091
     PYTHONPATH: /opt/airflow/:/opt/airflow/dags
   volumes:
     - ./airflow/dags:/opt/airflow/dags
@@ -288,6 +289,61 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: always
+    depends_on:
+      pushgateway:
+        condition: service_healthy
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: pushgateway
+    command:
+      - '--web.enable-admin-api'
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:9091/-/healthy" ]
+    ports:
+      - "9091:9091"
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: always
+    depends_on:
+      prometheus:
+        condition: service_healthy
+
 volumes:
   postgres-db-volume:
   mongodb-data:
+  grafana-data:

@@ -1,0 +1,659 @@
+{
+    "__inputs": [],
+    "__requires": [
+        {
+            "type": "grafana",
+            "id": "grafana",
+            "name": "Grafana",
+            "version": "9.0.0"
+        },
+        {
+            "type": "datasource",
+            "id": "prometheus",
+            "name": "Prometheus",
+            "version": "1.0.0"
+        },
+        {
+            "type": "panel",
+            "id": "timeseries",
+            "name": "Time series",
+            "version": ""
+        },
+        {
+            "type": "panel",
+            "id": "stat",
+            "name": "Stat",
+            "version": ""
+        },
+        {
+            "type": "panel",
+            "id": "barchart",
+            "name": "Bar chart",
+            "version": ""
+        }
+    ],
+    "annotations": {
+        "list": []
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 100,
+            "title": "Overview",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "none"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 1
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "title": "Total Readings (latest day)",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sum(sensor_reading_count)",
+                    "legendFormat": "Total",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "none"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 6,
+                "y": 1
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "title": "Active Devices",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "count(sensor_reading_count)",
+                    "legendFormat": "Devices",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.01
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.05
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 1
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "title": "Max CO Level",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "max(sensor_avg_co)",
+                    "legendFormat": "Max CO",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.02
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.08
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 1
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "title": "Max Smoke Level",
+            "type": "stat",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "max(sensor_avg_smoke)",
+                    "legendFormat": "Max Smoke",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 5
+            },
+            "id": 101,
+            "title": "Temperature & Humidity",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "fahrenheit"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 6
+            },
+            "id": 10,
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Avg Temperature per Device",
+            "type": "gauge",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_avg_temp",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 6
+            },
+            "id": 11,
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Avg Humidity per Device",
+            "type": "gauge",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_avg_humidity",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 14
+            },
+            "id": 102,
+            "title": "Air Quality (CO / LPG / Smoke)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 15
+            },
+            "id": 20,
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Avg CO Level per Device",
+            "type": "gauge",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_avg_co",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 15
+            },
+            "id": 21,
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Avg LPG Level per Device",
+            "type": "gauge",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_avg_lpg",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 15
+            },
+            "id": 22,
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Avg Smoke Level per Device",
+            "type": "gauge",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_avg_smoke",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 23
+            },
+            "id": 103,
+            "title": "Events (Motion & Light)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 24
+            },
+            "id": 30,
+            "options": {
+                "xTickLabelRotation": -30,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Motion Events per Device",
+            "type": "barchart",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_motion_events",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 24
+            },
+            "id": 31,
+            "options": {
+                "xTickLabelRotation": -30,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Light Events per Device",
+            "type": "barchart",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "expr": "sensor_light_events",
+                    "legendFormat": "{{device}}",
+                    "refId": "A"
+                }
+            ]
+        }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 38,
+    "tags": [
+        "iot",
+        "sensors",
+        "kpi"
+    ],
+    "templating": {
+        "list": [
+            {
+                "current": {},
+                "hide": 0,
+                "includeAll": false,
+                "multi": false,
+                "name": "datasource",
+                "options": [],
+                "query": "prometheus",
+                "refresh": 1,
+                "type": "datasource",
+                "label": "Data source"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-7d",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Sensor KPI Dashboard Last Day",
+    "uid": "sensor-kpi-dashboard",
+    "version": 1
+}
