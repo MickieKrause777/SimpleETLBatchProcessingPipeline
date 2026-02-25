@@ -1,14 +1,17 @@
 # Environmental Sensor Data System
 
 ## Overview
-This project implements a scalable data pipeline for processing environmental sensor data. It uses **MongoDB (Time Series Collections)** for storage, **Apache Airflow** for orchestration, and **Docker** for containerization.
+This project implements a scalable data pipeline for processing environmental sensor data. It uses **MongoDB (Time Series Collections)** for storage, **Apache Airflow** for orchestration, **Prometheus + Pushgateway** for KPI metrics, and **Grafana** for visualization — all containerized with Docker.
 
 ## System Architecture
-*   **Database**: MongoDB 7.0 (Time Series)
-*   **Orchestration**: Apache Airflow (running with CeleryExecutor)
-*   **Message Broker**: Redis (for Celery)
-*   **Metadata Store**: PostgreSQL (for Airflow)
-*   **Data Processing**: Python scripts (`batch_loader` and `data_cleaner`)
+| Component | Technology | Purpose |
+|---|---|---|
+| Database | MongoDB 7.0 (Time Series) | Raw sensor readings storage |
+| Orchestration | Apache Airflow (CeleryExecutor) | DAG scheduling and monitoring |
+| Message Broker | Redis | Celery task queue |
+| Metadata Store | PostgreSQL | Airflow internal state |
+| KPI Metrics | Prometheus + Pushgateway | Batch metrics ingestion and storage |
+| Visualization | Grafana | KPI dashboard |
 
 ## Prerequisites
 *   Docker
@@ -25,25 +28,41 @@ This project implements a scalable data pipeline for processing environmental se
     ```bash
     docker-compose up -d
     ```
-    This command downloads the necessary images and starts MongoDB, PostgreSQL, Redis, Airflow Webserver, Scheduler, and Workers.
 
-3.  **Access the Airflow UI**:
-    *   Open your browser and navigate to `http://localhost:8080`.
-    *   Default credentials: `airflow` / `airflow`.
+3.  **Access the UIs**:
+    | Service | URL | Credentials |
+    |---|---|---|
+    | Airflow | http://localhost:8080 | airflow / airflow |
+    | Prometheus | http://localhost:9090 | — |
+    | Pushgateway | http://localhost:9091 | — |
+    | Grafana | http://localhost:3000 | admin / admin |
 
 ## How it Works
-1.  **Data Ingestion**: The system reads CSV files containing sensor data (CO, humidity, temperature, etc.).
-2.  **Data Cleaning**: The `DataCleaner` module performs quality checks:
-    *   Removes duplicates.
-    *   Handles missing values.
-    *   Coerces data types (numeric, boolean).
-    *   Parses timestamps.
-3.  **Storage**: Cleaned data is batched and inserted into MongoDB. The collection is configured as a **Time Series Collection** for optimized storage and querying of time-based data.
-4.  **Automation**: Airflow DAGs (Directed Acyclic Graphs) schedule and monitor these tasks, ensuring reliable data processing.
+
+### 1. Data Ingestion (`sensor_batch_processing` DAG)
+Reads the CSV in parallel chunks, cleans it, and inserts rows into MongoDB `sensor_readings` (a Time Series collection).
+
+Cleaning steps:
+- Removes duplicates
+- Handles missing values
+- Coerces data types (numeric, boolean)
+- Parses epoch timestamps to `datetime`
+
+### 3. KPI Reporting (`sensor_kpi_reporting` DAG)
+Runs daily. Aggregates the previous day's data from MongoDB per device and pushes metrics to the Prometheus Pushgateway.
+
+All metrics are labeled by `device` and `day`.
+
+### 4. Visualization
+*   **Prometheus** (`:9090`) — query metrics via PromQL directly
+*   **Grafana** (`:3000`) — pre-built **Sensor KPI Dashboard** is provisioned automatically on startup, no manual setup needed
 
 ## File Structure
-*   `docker-compose.yml`: Defines the infrastructure services.
-*   `scripts/`: Contains the Python logic for loading and cleaning data.
-    *   `batch_loader/`: Handles reading CSVs and inserting into MongoDB.
-    *   `data_cleaner/`: Implements data transformation logic.
-*   `airflow/`: configuration for the Airflow instance.
+*   `docker-compose.yml` — full infrastructure definition
+*   `scripts/batch_loader/` — CSV reading and MongoDB insertion
+*   `scripts/data_cleaner/` — data transformation and validation
+*   `scripts/kpi_aggregator/` — MongoDB aggregation + Prometheus push
+*   `airflow/dags/sensor_batch_dag.py` — ingestion DAG
+*   `airflow/dags/kpi_dag.py` — KPI reporting DAG
+*   `prometheus/prometheus.yml` — Prometheus scrape config
+*   `grafana/provisioning/` — auto-provisioned datasource and dashboard
