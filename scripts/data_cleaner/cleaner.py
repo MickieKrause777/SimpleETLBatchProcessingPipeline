@@ -13,6 +13,7 @@ class DataCleaner:
             'duplicates_removed': 0,
             'missing_values_dropped': 0,
             'type_errors_fixed': 0,
+            'anomalies_flagged': 0,
         }
 
     def cleanse(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -25,6 +26,8 @@ class DataCleaner:
         df = self._coerce_types(df)
 
         df = self._parse_timestamps(df)
+
+        df = self._detect_anomalies(df)
 
         logger.info(f"Cleansing complete: {original_count} -> {len(df)} rows")
         logger.info(f"Stats: {self.stats}")
@@ -68,4 +71,39 @@ class DataCleaner:
             except:
                 df['ts'] = pd.to_datetime(df['ts'], errors='coerce')
 
+        return df
+
+    def _detect_anomalies(self, df: pd.DataFrame) -> pd.DataFrame:
+        thresholds = {
+            'temp': (0, 31.0),      # Typical indoor/environmental range in Celsius
+            'humidity': (0.0, 100.0),   # Physical limits
+            'co': (None, 0.02),         # High CO (ppm)
+            'lpg': (None, 0.02),        # High LPG (ppm)
+            'smoke': (None, 0.04)       # High Smoke (ppm)
+        }
+
+        anomaly_masks = {}
+
+        for col, (min_val, max_val) in thresholds.items():
+            if col not in df.columns:
+                continue
+
+            col_mask = pd.Series(False, index=df.index)
+            if min_val is not None:
+                col_mask = col_mask | (df[col] < min_val)
+            if max_val is not None:
+                col_mask = col_mask | (df[col] > max_val)
+
+            anomaly_masks[col] = col_mask
+
+        if anomaly_masks:
+            mask_df = pd.DataFrame(anomaly_masks)
+            # Find which columns violated thresholds for each row
+            df['anomalies'] = mask_df.apply(lambda row: row.index[row].tolist(), axis=1)
+            df['anomaly_count'] = mask_df.sum(axis=1)
+        else:
+            df['anomalies'] = [[] for _ in range(len(df))]
+            df['anomaly_count'] = 0
+
+        self.stats['anomalies_flagged'] += int((df['anomaly_count'] > 0).sum())
         return df

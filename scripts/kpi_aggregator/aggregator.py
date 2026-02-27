@@ -57,6 +57,8 @@ class KpiAggregator:
                     'motion_events': {'$sum': {'$cond': ['$motion', 1, 0]}},
                     'light_events': {'$sum': {'$cond': ['$light', 1, 0]}},
                     'reading_count': {'$sum': 1},
+                    'anomaly_total': {'$sum': '$anomaly_count'},
+                    'anomalous_readings': {'$sum': {'$cond': [{'$gt': ['$anomaly_count', 0]}, 1, 0]}},
                 }
             },
             {'$sort': {'_id': 1}},
@@ -85,6 +87,8 @@ class KpiAggregator:
             'sensor_motion_events': Gauge('sensor_motion_events', 'Total motion events', label_names, registry=registry),
             'sensor_light_events': Gauge('sensor_light_events', 'Total light events', label_names, registry=registry),
             'sensor_reading_count': Gauge('sensor_reading_count', 'Total readings ingested', label_names, registry=registry),
+            'sensor_anomaly_total': Gauge('sensor_anomaly_total', 'Total anomaly flags', label_names, registry=registry),
+            'sensor_anomaly_readings': Gauge('sensor_anomaly_readings', 'Total anomalous readings', label_names, registry=registry),
         }
 
         for row in results:
@@ -99,6 +103,8 @@ class KpiAggregator:
             metrics['sensor_motion_events'].labels(**labels).set(row.get('motion_events') or 0)
             metrics['sensor_light_events'].labels(**labels).set(row.get('light_events') or 0)
             metrics['sensor_reading_count'].labels(**labels).set(row.get('reading_count') or 0)
+            metrics['sensor_anomaly_total'].labels(**labels).set(row.get('anomaly_total') or 0)
+            metrics['sensor_anomaly_readings'].labels(**labels).set(row.get('anomalous_readings') or 0)
 
         push_to_gateway(self.pushgateway_url, job='sensor_kpi', registry=registry)
         logger.info(f"Pushed KPI metrics for {len(results)} device(s) to Pushgateway at {self.pushgateway_url}")
