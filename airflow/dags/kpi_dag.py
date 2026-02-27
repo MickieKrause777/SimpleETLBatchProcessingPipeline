@@ -14,7 +14,6 @@ default_args = {
 @dag(
     dag_id='sensor_kpi_reporting',
     default_args=default_args,
-    schedule='@daily',
     catchup=False,
     tags=['kpi', 'prometheus'],
 )
@@ -44,7 +43,7 @@ def sensor_kpi_reporting():
         print(f"\n{sep}")
         print(f"{'SENSOR KPI SUMMARY':^70}")
         print(sep)
-        header = f"{'Device':<25} {'Temp°F':>7} {'Hum%':>7} {'CO':>8} {'LPG':>8} {'Smoke':>8} {'Motion':>7} {'Light':>7} {'Reads':>7}"
+        header = f"{'Device':<25} {'Temp°C':>7} {'Hum%':>7} {'CO':>8} {'LPG':>8} {'Smoke':>8} {'Motion':>7} {'Light':>7} {'Reads':>7}"
         print(header)
         print('-' * 70)
         for row in kpi_results:

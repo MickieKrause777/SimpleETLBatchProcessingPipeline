@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from airflow.sdk import dag, task, task_group
+from airflow.providers.standard.operators.trigger_dagrun import TriggerDagRunOperator
 from scripts.batch_loader import BatchLoader, get_csv_row_count
 
 CSV_FILE_PATH = '/opt/airflow/data/iot_telemetry_data.csv'
@@ -135,11 +136,24 @@ def sensor_batch_processing():
 
         return total_stats
 
+    # @task.python
+    # def move_processed_file(**context):
+    #     BatchLoader.move_to_processed(CSV_FILE_PATH)
+    #     return f"Moved {CSV_FILE_PATH} to Processed/"
+
+    trigger_sensor_kpi = TriggerDagRunOperator(
+        task_id="trigger_sensor_kpi_reporting",
+        trigger_dag_id="sensor_kpi_reporting",
+        wait_for_completion=True,
+        reset_dag_run=True
+    )
+
     calculate_chunks = get_chunk_boundaries()
-    create_idx = setup_database()
+    setup_db = setup_database()
     process_group = process_chunks_group()
     aggregate = aggregate_results()
+    # move_file = move_processed_file()
 
-    [calculate_chunks, create_idx] >> process_group >> aggregate
+    [calculate_chunks, setup_db] >> process_group >> aggregate >> trigger_sensor_kpi
 
 sensor_batch_processing()
