@@ -1,0 +1,29 @@
+groups:
+  - name: sensor_anomalies
+    rules:
+      - alert: SensorOfflineOrLowData
+        expr: sensor_reading_count < 100
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sensor {{ $labels.device }} is reporting low/no data"
+          description: "Device {{ $labels.device }} reported only {{ $value }} readings in the last daily batch. Expected >= 100."
+
+      - alert: StaleSensorData
+        expr: push_time_seconds < (time() - 86400 * 2)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Batch data is stale for {{ $labels.instance }}"
+          description: "Pushgateway hasn't received new data in over 48 hours."
+
+      - alert: HighAbsoluteAnomalies
+        expr: sensor_anomaly_readings > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High threshold violations on {{ $labels.device }}"
+          description: "Device {{ $labels.device }} had {{ $value }} readings violating absolute quality thresholds (temp/humidity limits, high CO/smoke)."
