@@ -303,7 +303,7 @@
                     "color": {
                         "mode": "palette-classic"
                     },
-                    "unit": "fahrenheit"
+                    "unit": "celsius"
                 },
                 "overrides": []
             },
