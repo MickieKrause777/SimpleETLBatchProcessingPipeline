@@ -11,19 +11,73 @@ groups:
           description: "Device {{ $labels.device }} reported only {{ $value }} readings in the last daily batch. Expected >= 100."
 
       - alert: StaleSensorData
-        expr: push_time_seconds < (time() - 86400 * 2)
+        expr: push_time_seconds < (time() - 86400 * 0.5)
         for: 5m
         labels:
           severity: critical
         annotations:
           summary: "Batch data is stale for {{ $labels.instance }}"
-          description: "Pushgateway hasn't received new data in over 48 hours."
+          description: "Pushgateway hasn't received new data in over 12 hours."
 
-      - alert: HighAbsoluteAnomalies
-        expr: sensor_anomaly_readings > 50
+      - alert: VentilationIssue
+        expr: sensor_avg_co > 0.02
+        for: 3h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ventilation Issue on {{ $labels.device }}"
+          description: "Device {{ $labels.device }} has reported high CO (> 0.02) for over 3 hours."
+
+      - alert: SensorDead
+        expr: sensor_reading_count offset 1d unless sensor_reading_count
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sensor {{ $labels.device }} is completely dead"
+          description: "Device {{ $labels.device }} was reporting data yesterday but is missing from the latest batch."
+
+      - alert: SensorMalfunctioning
+        expr: (sensor_anomaly_readings / sensor_reading_count) > 0.10
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High threshold violations on {{ $labels.device }}"
-          description: "Device {{ $labels.device }} had {{ $value }} readings violating absolute quality thresholds (temp/humidity limits, high CO/smoke)."
+          summary: "Sensor {{ $labels.device }} is malfunctioning"
+          description: "Over 10% of readings for {{ $labels.device }} in the last batch were flagged as extreme anomalies."
+
+      - alert: SensorFrozen
+        expr: sensor_stddev_temp == 0
+        for: 3h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sensor {{ $labels.device }} appears frozen (stuck value)"
+          description: "Device {{ $labels.device }} has reported the exact same temperature (variance=0) for 3 hours."
+
+      - alert: SensorErratic
+        expr: sensor_stddev_temp > 5
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sensor {{ $labels.device }} is erratic"
+          description: "Device {{ $labels.device }} is reporting highly volatile temperatures (stddev > 5) in a short window."
+
+      - alert: HVACWaste
+        expr: sensor_avg_temp > 25 and sensor_motion_events == 0
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Potential HVAC Waste in area {{ $labels.device }}"
+          description: "Temperature is >25°C but no motion detected for 2 hours for {{ $labels.device }}."
+
+      - alert: VentilationInefficiency
+        expr: sensor_avg_co > 0.01 and sensor_motion_events == 0
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Poor Ventilation Recovery in area {{ $labels.device }}"
+          description: "CO remains high (>0.01) despite 0 motion events over 2 hours for {{ $labels.device }}."
