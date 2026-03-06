@@ -1,7 +1,14 @@
 # Environmental Sensor Data System
 
 ## Overview
-This project implements a scalable data pipeline for processing environmental sensor data. It uses **MongoDB (Time Series Collections)** for storage, **Apache Airflow** for orchestration, **Prometheus + Pushgateway** for KPI metrics, and **Grafana** for visualization — all containerized with Docker.
+This project implements a scalable data pipeline for processing environmental sensor data. It uses **MongoDB (Time Series Collections)** for storage, **Apache Airflow** for orchestration, **Prometheus + Pushgateway** for KPI metrics, and **Grafana** and **Streamlit with Plotly** for visualization — all containerized with Docker.
+
+## Early Identification System
+The platform includes an early anomaly identification system to proactively detect hardware malfunctions and operational inefficiencies:
+*   **Micro-Batching & Custom Intervals:** The KPI aggregator dynamically supports custom time intervals (e.g., hourly runs), enabling faster insights and granular metric tracking.
+*   **Statistical Variance Analysis:** Calculates data variance (e.g., Standard Deviation for Temperature, Humidity, and CO) natively in MongoDB to track signal stability over time.
+*   **Contextual Anomaly Alerts:** Prometheus rules (`alert_rules.yml`) flag advanced behavioral issues such as stuck sensors (`SensorFrozen`), erratic readings (`SensorErratic`), and inefficient HVAC/Ventilation usage based on cross-referenced occupancy.
+*   **Time Series Visualizations:** Streamlit dashboard panels visualize metrics over time using dual Y-axes to rapidly spot trends and correlations (e.g., comparing temp vs. CO levels).
 
 ## System Architecture
 | Component | Technology | Purpose |
@@ -11,11 +18,8 @@ This project implements a scalable data pipeline for processing environmental se
 | Message Broker | Redis | Celery task queue |
 | Metadata Store | PostgreSQL | Airflow internal state |
 | KPI Metrics | Prometheus + Pushgateway | Batch metrics ingestion and storage |
-| Visualization | Grafana | KPI dashboard |
-
-## Prerequisites
-*   Docker
-*   Docker Compose
+| KPI Dashboards | Grafana | KPI dashboards and anomaly monitoring |
+| Sensor Visualization | Streamlit | Interactive sensor data and time series dashboards |
 
 ## How to Start the System
 1.  **Clone the repository**:
@@ -30,8 +34,10 @@ This project implements a scalable data pipeline for processing environmental se
     ```
 
 3.  **Access the UIs**:
+
     | Service | URL | Credentials |
     |---|---|---|
+    | Streamlit IoT Dashboard | http://localhost:8501 | Main system dashboard and sensor visualization |
     | Airflow | http://localhost:8080 | airflow / airflow |
     | Prometheus | http://localhost:9090 | — |
     | Pushgateway | http://localhost:9091 | — |
@@ -48,14 +54,42 @@ Cleaning steps:
 - Coerces data types (numeric, boolean)
 - Parses epoch timestamps to `datetime`
 
-### 3. KPI Reporting (`sensor_kpi_reporting` DAG)
-Runs daily. Aggregates the previous day's data from MongoDB per device and pushes metrics to the Prometheus Pushgateway.
+### 2. KPI Reporting
+Runs periodically (e.g., daily or hourly). Aggregates the previous time window's data from MongoDB per device and pushes both static bounds and statistical variance metrics to the Prometheus Pushgateway.
 
 All metrics are labeled by `device` and `day`.
 
-### 4. Visualization
-*   **Prometheus** (`:9090`) — query metrics via PromQL directly
-*   **Grafana** (`:3000`) — pre-built **Sensor KPI Dashboard** is provisioned automatically on startup, no manual setup needed
+### 3. Monitoring and Alerting
+
+Prometheus continuously scrapes metrics from the Pushgateway.
+
+Prometheus alert rules monitor:
+
+- Sensor variance
+- Device activity
+- Environmental anomalies
+
+Triggered alerts can then be visualized in **Grafana dashboards**.
+
+### 4. Visualization Layer
+
+The system uses **two complementary visualization layers**:
+
+#### Streamlit Dashboard
+
+Used for:
+
+- Sensor time series exploration
+- Device-level data analysis
+- Operational entry point to system services
+
+#### Grafana
+
+Used for:
+
+- KPI dashboards
+- Aggregated monitoring views
+- Anomaly detection visualizations
 
 ## File Structure
 *   `docker-compose.yml` — full infrastructure definition
@@ -66,3 +100,4 @@ All metrics are labeled by `device` and `day`.
 *   `airflow/dags/kpi_dag.py` — KPI reporting DAG
 *   `prometheus/prometheus.yml` — Prometheus scrape config
 *   `grafana/provisioning/` — auto-provisioned datasource and dashboard
+  * `streamlit/` — main system dashboard and sensor visualization
