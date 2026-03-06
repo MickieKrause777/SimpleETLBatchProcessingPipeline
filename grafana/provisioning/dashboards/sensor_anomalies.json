@@ -203,7 +203,60 @@
       ],
       "title": "Data Availability (Readings per Device)",
       "type": "barchart"
+    },
+    {
+  "type": "timeseries",
+  "title": "Avg Temperature & CO Over Time",
+  "description": "Dual-axis view: Temperature (°C, left) and CO (ppm, right). Updates with each pipeline batch.",
+  "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "spanNulls": false
+      }
+    },
+    "overrides": [
+      {
+        "matcher": { "id": "byName", "options": "Avg CO (ppm)" },
+        "properties": [
+          { "id": "custom.axisPlacement", "value": "right" },
+          { "id": "unit",                 "value": "ppm"   },
+          { "id": "color",
+            "value": { "mode": "fixed", "fixedColor": "orange" }
+          }
+        ]
+      },
+      {
+        "matcher": { "id": "byName", "options": "Avg Temperature (°C)" },
+        "properties": [
+          { "id": "custom.axisPlacement", "value": "left"    },
+          { "id": "unit",                 "value": "celsius" },
+          { "id": "color",
+            "value": { "mode": "fixed", "fixedColor": "blue" }
+          }
+        ]
+      }
+    ]
+  },
+  "options": {
+    "legend": { "displayMode": "list", "placement": "bottom" },
+    "tooltip": { "mode": "multi" }
+  },
+  "targets": [
+    {
+      "expr":         "sensor_avg_temp",
+      "legendFormat": "Avg Temperature (°C)",
+      "refId":        "A"
+    },
+    {
+      "expr":         "sensor_avg_co",
+      "legendFormat": "Avg CO (ppm)",
+      "refId":        "B"
     }
+  ]
+}
   ],
   "preload": false,
   "refresh": "10s",
@@ -229,7 +282,7 @@
     ]
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-15min",
     "to": "now"
   },
   "timepicker": {},

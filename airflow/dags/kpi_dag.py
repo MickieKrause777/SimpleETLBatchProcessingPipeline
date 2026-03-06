@@ -20,14 +20,9 @@ default_args = {
 def sensor_kpi_reporting():
     @task.python
     def compute_kpis(**context) -> list:
-        # Use fixed date because of the current Dataset
-        execution_date: datetime = datetime(2020, 7, 13)
-        # Aggregate for the day *before* the execution date (yesterday relative to DAG run)
-        target_date = execution_date.replace(tzinfo=timezone.utc) - timedelta(days=1)
-
         aggregator = KpiAggregator(pushgateway_url=PUSHGATEWAY_URL)
         try:
-            results = aggregator.run(target_date=target_date)
+            results = aggregator.run()
         finally:
             aggregator.close()
 

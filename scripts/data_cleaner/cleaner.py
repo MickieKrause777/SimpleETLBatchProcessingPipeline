@@ -96,6 +96,13 @@ class DataCleaner:
 
             anomaly_masks[col] = col_mask
 
+            for col in ['temp', 'humidity', 'co']:
+                if col not in df.columns:
+                    continue
+                if df[col].std(ddof=1) == 0:
+                    frozen_key = f"{col}_frozen"
+                    anomaly_masks[frozen_key] = pd.Series(True, index=df.index)
+
         if anomaly_masks:
             mask_df = pd.DataFrame(anomaly_masks)
             # Find which columns violated thresholds for each row
