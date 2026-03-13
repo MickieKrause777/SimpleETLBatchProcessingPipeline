@@ -1,4 +1,4 @@
-import hashlib
+import shutil
 import logging
 import os
 from scripts.data_cleaner import DataCleaner
@@ -72,6 +72,20 @@ class BatchLoader:
             'source_rows': f'{start_row}-{end_row}'
         }, axis=1)
 
+        alerts_df = df[df['anomaly_count'] > 0]
+        if not alerts_df.empty:
+            alerts_records = alerts_df.apply(lambda row: {
+                'device': row['device'],
+                'ts': row['ts'],
+                'anomalies': row['anomalies'],
+                'anomaly_count': row['anomaly_count'],
+                'sensor_malfunction': row.get('sensor_malfunction', False),
+                'hvac_waste': row.get('hvac_waste', False),
+                'ventilation_ineff': row.get('ventilation_ineff', False),
+                'batch_id': batch_id
+            }, axis=1).tolist()
+            self.db['sensor_alerts'].insert_many(alerts_records)
+
         records = df.to_dict('records')
         inserted_count = 0
 
@@ -99,6 +113,16 @@ class BatchLoader:
         """Close MongoDB connection."""
         self.client.close()
         logger.info("MongoDB connection closed")
+
+    def move_to_processed(filepath: str) -> str:
+        src = os.path.abspath(filepath)
+        processed_dir = os.path.join(os.path.dirname(src), 'Processed')
+        os.makedirs(processed_dir, exist_ok=True)
+
+        dest = os.path.join(processed_dir, os.path.basename(src))
+        shutil.move(src, dest)
+        logger.info(f"Moved processed file to {dest}")
+        return dest
 
 def get_csv_row_count(filepath: str) -> int:
     with open(filepath, 'r') as f:

@@ -96,21 +96,25 @@ class DataCleaner:
 
             anomaly_masks[col] = col_mask
 
-            for col in ['temp', 'humidity', 'co']:
-                if col not in df.columns:
-                    continue
-                if df[col].std(ddof=1) == 0:
-                    frozen_key = f"{col}_frozen"
-                    anomaly_masks[frozen_key] = pd.Series(True, index=df.index)
+        # Frozen-Detection
+        for col in ['temp', 'humidity', 'co']:
+            if col in df.columns and df[col].std(ddof=1) == 0:
+                anomaly_masks[f"{col}_frozen"] = pd.Series(True, index=df.index)
 
-        if anomaly_masks:
-            mask_df = pd.DataFrame(anomaly_masks)
-            # Find which columns violated thresholds for each row
-            df['anomalies'] = mask_df.apply(lambda row: row.index[row].tolist(), axis=1)
-            df['anomaly_count'] = mask_df.sum(axis=1)
-        else:
-            df['anomalies'] = [[] for _ in range(len(df))]
-            df['anomaly_count'] = 0
+        mask_df = pd.DataFrame(anomaly_masks) if anomaly_masks else pd.DataFrame(index=df.index)
+        df['anomaly_count'] = mask_df.sum(axis=1)
+        df['anomalies'] = mask_df.apply(lambda row: row.index[row].tolist(), axis=1) if not mask_df.empty else [[] for _ in range(len(df))]
+
+        # SensorMalfunctioning (>10% Anomalous readings)
+        df['sensor_malfunction'] = (df['anomaly_count'] / len(thresholds)) > 0.10 if len(thresholds) > 0 else False
+
+        # HVACWaste: temp>25 & motion_events==0
+        if 'temp' in df.columns and 'motion' in df.columns:
+            df['hvac_waste'] = (df['temp'] > 25) & (~df['motion'].astype(bool))
+
+        # VentilationInefficiency: co>0.01 & motion_events==0
+        if 'co' in df.columns and 'motion' in df.columns:
+            df['ventilation_ineff'] = (df['co'] > 0.01) & (~df['motion'].astype(bool))
 
         self.stats['anomalies_flagged'] += int((df['anomaly_count'] > 0).sum())
         return df
