@@ -35,13 +35,13 @@ The platform includes an early anomaly identification system to proactively dete
 
 3.  **Access the UIs**:
 
-    | Service | URL | Credentials |
-    |---|---|---|
-    | Streamlit IoT Dashboard | http://localhost:8501 | Main system dashboard and sensor visualization |
-    | Airflow | http://localhost:8080 | airflow / airflow |
-    | Prometheus | http://localhost:9090 | — |
-    | Pushgateway | http://localhost:9091 | — |
-    | Grafana | http://localhost:3000 | admin / admin |
+    | Service | URL                              | Credentials |
+    |---|----------------------------------|---|
+    | Streamlit IoT Dashboard | http://localhost:8501            | Main system dashboard and sensor visualization |
+    | Airflow | http://localhost:8080/auth/login | airflow / airflow |
+    | Prometheus | http://localhost:9090            | — |
+    | Pushgateway | http://localhost:9091            | — |
+    | Grafana | http://localhost:3000            | admin / admin |
 
 ## How it Works
 

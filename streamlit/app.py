@@ -113,14 +113,39 @@ def create_anomaly_report():
     styles = getSampleStyleSheet()
     story = []
 
-    story.append(Paragraph(f"Sensor Alerts Report ({datetime.date(start)} bis {datetime.date(end)})", styles['Title']))
+    story.append(Paragraph(f"Sensor Alerts Report ({datetime.date(start)} - {datetime.date(end)})", styles['Title']))
     story.append(Spacer(1, 20))
     story.append(Spacer(1, 20))
 
-    # TODO: not only types!
     for _, row in report_df.iterrows():
+        device = row["device"]
+
         story.append(Paragraph(f"Device {row['device']} - Total Anomalies: {row['anomaly_count']}", styles['Heading3']))
-        story.append(Paragraph(f"Types: {', '.join(row['anomalies'])}", styles['Normal']))
+
+        story.append(Paragraph(f"Types: {', '.join(set(row['anomalies']))}", styles['Normal']))
+
+        recent = alerts_df[alerts_df["device"] == device].sort_values("ts").tail(3)
+
+        active = []
+        if not recent.empty:
+            latest = recent.iloc[0]
+
+            if latest["sensor_malfunction"]:
+                active.append("Sensor Malfunction")
+
+            if latest["hvac_waste"]:
+                active.append("HVAC Waste")
+
+            if latest["ventilation_ineff"]:
+                active.append("Ventilation Inefficiency")
+
+        for _, r in recent.iterrows():
+            story.append(Paragraph(
+                f"{r['ts']} → {', '.join(r['anomalies'])} | {', '.join(active) if active else ''}",
+                styles['Normal']
+            ))
+
+        story.append(Paragraph(f"Please watch the Chart for further Information!"))
         story.append(Spacer(1, 10))
 
     doc.build(story)
