@@ -2,24 +2,78 @@
 
 ## Overview
 This project implements a scalable data pipeline for processing environmental sensor data. It uses **MongoDB (Time Series Collections)** for storage, **Apache Airflow** for orchestration, **Prometheus + Pushgateway** for KPI metrics, and **Grafana** and **Streamlit with Plotly** for visualization — all containerized with Docker.
+The platform now supports **generating anomaly reports as PDF documents for arbitrary time windows**, allowing operational staff to review incidents and environmental irregularities for selected dates.
+Future iterations of the system could possibly support **automated report distribution (e.g., via email), predictive anomaly detection models or static site generation (SSG)**.
 
-## Early Identification System
-The platform includes an early anomaly identification system to proactively detect hardware malfunctions and operational inefficiencies:
-*   **Micro-Batching & Custom Intervals:** The KPI aggregator dynamically supports custom time intervals (e.g., hourly runs), enabling faster insights and granular metric tracking.
-*   **Statistical Variance Analysis:** Calculates data variance (e.g., Standard Deviation for Temperature, Humidity, and CO) natively in MongoDB to track signal stability over time.
-*   **Contextual Anomaly Alerts:** Prometheus rules (`alert_rules.yml`) flag advanced behavioral issues such as stuck sensors (`SensorFrozen`), erratic readings (`SensorErratic`), and inefficient HVAC/Ventilation usage based on cross-referenced occupancy.
-*   **Time Series Visualizations:** Streamlit dashboard panels visualize metrics over time using dual Y-axes to rapidly spot trends and correlations (e.g., comparing temp vs. CO levels).
+## Example Use Case
+A large **hotel chain** operates hundreds of rooms across multiple locations, each equipped with environmental sensors monitoring:
+
+- Temperature
+- Humidity
+- CO concentration
+- Motion (occupancy)
+- Light levels
+
+The system continuously ingests sensor data from all rooms and detects anomalies such as:
+
+- malfunctioning sensors  
+- inefficient HVAC usage  
+- ventilation inefficiencies  
+- unusual environmental fluctuations
+
+Because the system uses **Apache Airflow with the CeleryExecutor**, ingestion and analysis tasks can run in parallel across multiple workers. This allows the system to scale horizontally as the number of monitored rooms increases.
+
+Operational staff can then use the **Streamlit dashboard** to:
+
+- inspect sensor time series
+- view detected anomalies
+- generate **PDF reports for specific time periods**
+- go to the Grafana Dashboards for Daily KPIs
+
+For example:
+
+> A facility manager responsible for several hotel floors can generate a **daily anomaly report** and quickly identify rooms where ventilation systems are inefficient or sensors may require maintenance.
+
+This enables **centralized monitoring with minimal personnel**, even for large distributed sensor networks.
+
+# Early Identification System
+
+The platform includes an early anomaly identification system to proactively detect hardware malfunctions and operational inefficiencies.
+* **Micro-Batching & Parallel Processing:**  
+  Data ingestion is executed in parallel chunks using Airflow and Celery workers, enabling scalable processing of large sensor datasets.
+
+* **Statistical Variance Analysis:**  
+  Sensor variance metrics (e.g., temperature, humidity, CO) are calculated to detect abnormal fluctuations or frozen sensor signals.
+
+* **MongoDB-Based Anomaly Storage:**  
+  Instead of external alert systems, anomalies are written directly into the **`sensor_alerts` collection** during ingestion.  
+  Each anomaly record contains:
+
+  - device ID
+  - timestamp
+  - anomaly types
+  - anomaly count
+  - contextual flags (sensor malfunction, HVAC inefficiency, etc.)
+  - batch identifier
+
+  This design allows flexible querying and report generation.
+
+* **Time Series Visualizations:**  
+  Streamlit dashboard panels visualize metrics over time using Plotly, allowing operators to rapidly spot correlations and trends.
 
 ## System Architecture
-| Component | Technology | Purpose |
-|---|---|---|
-| Database | MongoDB 7.0 (Time Series) | Raw sensor readings storage |
-| Orchestration | Apache Airflow (CeleryExecutor) | DAG scheduling and monitoring |
-| Message Broker | Redis | Celery task queue |
-| Metadata Store | PostgreSQL | Airflow internal state |
-| KPI Metrics | Prometheus + Pushgateway | Batch metrics ingestion and storage |
-| KPI Dashboards | Grafana | KPI dashboards and anomaly monitoring |
-| Sensor Visualization | Streamlit | Interactive sensor data and time series dashboards |
+| Component            | Technology                        | Purpose                                                    |
+|----------------------|-----------------------------------|------------------------------------------------------------|
+| Database             | MongoDB 7.0 (Time Series)         | Raw sensor readings storage                                |
+| Anomaly Storage      | MongoDB (`sensor_alerts`)         | Detected anomalies and operational alerts                  |
+| Error Storage        | MongoDB (`batch_errors`)          | Store errors happening during batch ingestion for recovery |
+| Orchestration        | Apache Airflow (CeleryExecutor)   | DAG scheduling and monitoring                              |
+| Message Broker       | Redis                             | Celery task queue                                          |
+| Metadata Store       | PostgreSQL                        | Airflow internal state                                     |
+| KPI Metrics          | Prometheus + Pushgateway          | Batch metrics ingestion and storage                        |
+| KPI Dashboards       | Grafana                           | KPI dashboards and anomaly monitoring                      |
+| Sensor Visualization | Streamlit                         | Interactive sensor data and time series dashboards         |
+| Reporting            | Streamlit / Python PDF generation | Manual anomaly report creation                             |
 
 ## How to Start the System
 1.  **Clone the repository**:
@@ -53,23 +107,18 @@ Cleaning steps:
 - Handles missing values
 - Coerces data types (numeric, boolean)
 - Parses epoch timestamps to `datetime`
+- Validate sensor ranges
 
-### 2. KPI Reporting
+### 2. Anomaly Extraction
+During batch ingestion:
+1. Each record is evaluated for anomalies.
+2. Records with `anomaly_count > 0` are extracted.
+3. These records are inserted into the `sensor_alerts` collection.
+
+### 3. KPI Reporting
 Runs periodically (e.g., daily or hourly). Aggregates the previous time window's data from MongoDB per device and pushes both static bounds and statistical variance metrics to the Prometheus Pushgateway.
 
 All metrics are labeled by `device` and `day`.
-
-### 3. Monitoring and Alerting
-
-Prometheus continuously scrapes metrics from the Pushgateway.
-
-Prometheus alert rules monitor:
-
-- Sensor variance
-- Device activity
-- Environmental anomalies
-
-Triggered alerts can then be visualized in **Grafana dashboards**.
 
 ### 4. Visualization Layer
 
@@ -82,6 +131,8 @@ Used for:
 - Sensor time series exploration
 - Device-level data analysis
 - Operational entry point to system services
+- Anomalies Inspection (Monitoring)
+- Generation of PDF reports for selected time windows
 
 #### Grafana
 
@@ -89,7 +140,6 @@ Used for:
 
 - KPI dashboards
 - Aggregated monitoring views
-- Anomaly detection visualizations
 
 ## File Structure
 *   `docker-compose.yml` — full infrastructure definition
