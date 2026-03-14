@@ -31,6 +31,7 @@ class BatchLoader:
         self.client = MongoClient(self.mongo_uri)
         self.db = self.client[self.database]
         self.collection = self.db[self.collection_name]
+        self.error_collection = self.db["batch_errors"]
         logger.info(f"Connected to MongoDB: {self.mongo_uri}, DB: {self.database}")
 
     def setup_collection(self):
@@ -88,6 +89,7 @@ class BatchLoader:
 
         records = df.to_dict('records')
         inserted_count = 0
+        failed_records = []
 
         for i in range(0, len(records), self.batch_size):
             batch = records[i:i + self.batch_size]
@@ -97,6 +99,23 @@ class BatchLoader:
             except BulkWriteError as e:
                 inserted_count += e.details.get('nInserted', 0)
                 logger.warning(f"Bulk write warning: {e.details.get('writeErrors', [])[:3]}")
+                for err in e.details.get("writeErrors", []):
+                    failed_doc = batch[err["index"]]
+
+                    failed_records.append({
+                        "batch_id": batch_id,
+                        "error_type": err.get("code"),
+                        "error_message": err.get("errmsg"),
+                        "record": failed_doc,
+                        "logged_at": datetime.now()
+                    })
+
+        if failed_records:
+            self.error_collection.insert_many(failed_records)
+
+            logger.warning(
+                f"{len(failed_records)} records failed and stored in batch_errors"
+            )
 
         stats = {
             'rows_read': nrows,
